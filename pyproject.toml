@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "bandai-namco-research-motiondataset"
+version = "0.1.0"
+description = ""
+authors = ["sh1n00 <rinjyou0031@toki.waseda.jp>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+bvh-converter = "^1.0.2"
+bvhtoolbox = "^0.1.3"
+bvh = "^0.3"
+pandas = "^2.0.2"
+matplotlib = "^3.7.1"
+pyqt5 = "^5.15.9"
+jupyter = "^1.0.0"
+torch = "^2.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
