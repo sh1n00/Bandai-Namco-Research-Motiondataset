@@ -1,5 +1,4 @@
 import os
-from typing import overload
 
 import numpy as np
 import pandas as pd
@@ -9,14 +8,13 @@ from functools import singledispatch
 import torch
 
 
-# TODO: matplotlibのフォーマットを指定する
 @singledispatch
 def create_gif(obj) -> str:
     return "Invalid params"
 
 
 @create_gif.register
-def _(filepath: str) -> None:
+def _(filepath: str, is_show: bool = False) -> None:
     _, filename = os.path.split(filepath)
     filename, ext = os.path.splitext(filename)
     df = pd.read_csv(f"../position/{filename}{ext}")
@@ -61,11 +59,14 @@ def _(filepath: str) -> None:
 
     ani = animation.FuncAnimation(fig, update, frames=len(df), interval=50)
     ani.save(os.path.join("..", "gif", f"{filename}_label.gif"), writer="imagemagick")
-    plt.show()
+    if is_show:
+        plt.show()
 
 
 @create_gif.register
-def _(motion_frames: torch.Tensor, output_name: str) -> None:
+def _(motion_frames: torch.Tensor, output_name: str, is_show: bool = False) -> None:
+    filename, _ = os.path.splitext(output_name)
+
     root_pos = motion_frames[:, :3]
     body_pos = motion_frames[:, 3:]
     fig = plt.figure()
@@ -95,14 +96,16 @@ def _(motion_frames: torch.Tensor, output_name: str) -> None:
 
     ani = animation.FuncAnimation(fig, update, frames=len(body_pos), interval=50)
     ani.save(os.path.join("..", "gif", f"{output_name}_pred.gif"), writer="imagemagick")
-    plt.show()
+    if is_show:
+        plt.show()
 
 
 @create_gif.register
-def _(label: pd.DataFrame, pred: torch.Tensor, output_name: str) -> None:
+def _(label: pd.DataFrame, pred: torch.Tensor, output_name: str, is_show: bool = False) -> None:
+    filename, _ = os.path.splitext(output_name)
+
     root_pos = pred[:, :3]
     body_pos = pred[:, 3:]
-
     root_pos = label[["joint_Root.x", "joint_Root.y", "joint_Root.z"]]
     label.drop(["joint_Root.x", "joint_Root.y", "joint_Root.z"], axis=1, inplace=True)
 
@@ -142,10 +145,11 @@ def _(label: pd.DataFrame, pred: torch.Tensor, output_name: str) -> None:
         sc2._offsets3d = (x_label, y_label, z_label)
 
     ani = animation.FuncAnimation(fig, update, frames=len(body_pos), interval=50)
-    ani.save(os.path.join("..", "gif", f"{output_name}_combine.gif"), writer="imagemagick")
-    plt.show()
+    ani.save(os.path.join("..", "gif", f"{filename}_combine.gif"), writer="imagemagick")
+    if is_show:
+        plt.show()
 
 
 if __name__ == "__main__":
-    filename = "dataset-1_walk-back_angry_001_pos"
+    filename = "dataset-1_walk-back_angry_001_pos.csv"
     create_gif(filename)
