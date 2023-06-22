@@ -1,19 +1,15 @@
 import pandas as pd
-import matplotlib.pyplot as plt
 from glob import glob
 from tqdm import tqdm
 
-import settings
+from utils import settings
 from calcuate import calc_velocity
 
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 
-pos_paths = glob("../position/*")
-
-import matplotlib as mpl
+pos_paths = glob("../data/raw/position/*")
 
 df = pd.DataFrame()
 for pos_path in pos_paths:
@@ -109,13 +105,13 @@ with torch.no_grad():
         error += loss.item()
     print(error)
 
-df_test = pd.read_csv("../position/dataset-1_walk_giant_001_pos.csv")
+df_test = pd.read_csv("../data/raw/position/dataset-1_walk_giant_001_pos.csv")
 df_test = calc_velocity(df_test)
 X = torch.Tensor(df_test[input_columns].values)
 y: pd.DataFrame = df_test[settings.POSITIONCOLUMNS]
 outputs: torch.Tensor = model(X)
 
-from create_gif import create_gif
+from animation import create_gif
 
 # create_gif(outputs, "walk_giant_001")
 create_gif("dataset-1_walk_giant_001_pos.csv")

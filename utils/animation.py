@@ -9,15 +9,10 @@ import torch
 
 
 @singledispatch
-def create_gif(obj) -> str:
-    return "Invalid params"
-
-
-@create_gif.register
-def _(filepath: str, is_show: bool = False) -> None:
+def create_gif(filepath: str, is_show: bool = False) -> None:
     _, filename = os.path.split(filepath)
     filename, ext = os.path.splitext(filename)
-    df = pd.read_csv(f"../position/{filename}{ext}")
+    df = pd.read_csv(f"../data/raw/position/{filename}{ext}")
 
     timestamp = df["time"]
     df.drop("time", axis=1, inplace=True)
@@ -58,7 +53,54 @@ def _(filepath: str, is_show: bool = False) -> None:
         sc._offsets3d = (x, y, z)
 
     ani = animation.FuncAnimation(fig, update, frames=len(df), interval=50)
-    ani.save(os.path.join("..", "gif", f"{filename}_label.gif"), writer="imagemagick")
+    ani.save(os.path.join("..", "result", "gif", f"{filename}_label.gif"), writer="imagemagick")
+    if is_show:
+        plt.show()
+
+
+@create_gif.register
+def _(df: pd.DataFrame, output_name: str, is_show: bool = False) -> None:
+    filename, _ = os.path.splitext(output_name)
+
+    df.drop("time", axis=1, inplace=True)
+    root_pos = df[["joint_Root.x", "joint_Root.y", "joint_Root.z"]]
+    df.drop(["joint_Root.x", "joint_Root.y", "joint_Root.z"], axis=1, inplace=True)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    sc = ax.scatter([], [], [], color="green")
+
+    ax.set_xscale("linear")
+    ax.set_yscale("linear")
+    ax.set_zscale("linear")
+
+    x_columns = df.columns.str.contains('x')
+    y_columns = df.columns.str.contains('y')
+    z_columns = df.columns.str.contains('z')
+    x_max, x_min = df.loc[:, x_columns].values.max(), df.loc[:, x_columns].values.min()
+    y_max, y_min = df.loc[:, y_columns].values.max(), df.loc[:, y_columns].values.min()
+    z_max, z_min = df.loc[:, z_columns].values.max(), df.loc[:, z_columns].values.min()
+
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.set_zlim(z_min, z_max)
+
+    ax.set_xlabel("x-axis [cm]")
+    ax.set_ylabel("y-axis [cm]")
+    ax.set_zlabel("z-axis [cm]")
+
+    def update(frame):
+        df_i = df.iloc[frame, :]
+        x, y, z = [], [], []
+        for index in range(0, len(df_i), 3):
+            xi, yi, zi = df_i[index:index + 3]
+            x.append(xi)
+            y.append(yi)
+            z.append(zi)
+        sc._offsets3d = (x, y, z)
+
+    ani = animation.FuncAnimation(fig, update, frames=len(df), interval=50)
+    ani.save(os.path.join("..", "result", "gif", f"{filename}_label.gif"), writer="imagemagick")
     if is_show:
         plt.show()
 
@@ -95,13 +137,12 @@ def _(motion_frames: torch.Tensor, output_name: str, is_show: bool = False) -> N
         sc._offsets3d = (x, y, z)
 
     ani = animation.FuncAnimation(fig, update, frames=len(body_pos), interval=50)
-    ani.save(os.path.join("..", "gif", f"{output_name}_pred.gif"), writer="imagemagick")
+    ani.save(os.path.join("..", "result", "gif", f"{filename}_pred.gif"), writer="imagemagick")
     if is_show:
         plt.show()
 
 
-@create_gif.register
-def _(label: pd.DataFrame, pred: torch.Tensor, output_name: str, is_show: bool = False) -> None:
+def create_git_combine(label: pd.DataFrame, pred: torch.Tensor, output_name: str, is_show: bool = False) -> None:
     filename, _ = os.path.splitext(output_name)
 
     root_pos = pred[:, :3]
@@ -145,11 +186,15 @@ def _(label: pd.DataFrame, pred: torch.Tensor, output_name: str, is_show: bool =
         sc2._offsets3d = (x_label, y_label, z_label)
 
     ani = animation.FuncAnimation(fig, update, frames=len(body_pos), interval=50)
-    ani.save(os.path.join("..", "gif", f"{filename}_combine.gif"), writer="imagemagick")
+    ani.save(os.path.join("..", "result", "gif", f"{filename}_combine.gif"), writer="imagemagick")
     if is_show:
         plt.show()
 
 
 if __name__ == "__main__":
     filename = "dataset-1_walk-back_angry_001_pos.csv"
-    create_gif(filename)
+    df: pd.DataFrame = pd.read_csv(
+        "/Users/riku-sh/Desktop/Bandai-Namco-Research-Motiondataset/data/raw/position/dataset-1_dash_old_001_pos.csv")
+    create_gif(df, filename)
+    create_gif(
+        "/Users/riku-sh/Desktop/Bandai-Namco-Research-Motiondataset/data/raw/position/dataset-1_dash_old_001_pos.csv")
