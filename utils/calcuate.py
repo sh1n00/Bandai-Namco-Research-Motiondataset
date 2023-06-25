@@ -1,4 +1,5 @@
 import pandas as pd
+from functools import singledispatch
 
 from utils import myenum
 
@@ -6,6 +7,17 @@ from utils import myenum
 # 関節の速度を計算する
 def calc_velocity(df: pd.DataFrame) -> pd.DataFrame:
     diff_pos = df[myenum.DefaultColumns.get_all_default_columns()].diff()
+    diff_t = df["time"].diff()
+    df_velocity = diff_pos.div(diff_t, axis=0)
+
+    # 最初の速度は0
+    df_velocity.fillna(0.0, inplace=True)
+    df_velocity.columns = myenum.VelocityColumns.get_all_velocities()
+    return pd.concat([df, df_velocity], axis=1)
+
+
+def calc_velocity_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    diff_pos = df[columns].diff()
     diff_t = df["time"].diff()
     df_velocity = diff_pos.div(diff_t, axis=0)
 
